@@ -4,7 +4,7 @@ from binary_classification_algorithms import train_model
 
 def create_interface(root):
   root.title("Feature Selector")
-  root.geometry("400x650")
+  root.geometry("400x550")
   # Feature Selection
   ttk.Label(root, text="Select two features").pack(pady=(5, 0))
   
@@ -17,7 +17,7 @@ def create_interface(root):
   feature_listbox.pack(pady=(0, 5))
   # Class Selection
   ttk.Label(root, text="Select two classes").pack()
-  
+
   class_listbox = tk.Listbox(root, selectmode=tk.MULTIPLE, height=3)
   classes = ["BOMBAY", "CALI", "SIRA"]
   
@@ -26,40 +26,25 @@ def create_interface(root):
   
   class_listbox.pack(pady=(0, 5))
 
-  # Spacer
-  ttk.Label(root, text="").pack()
-
   # Learning Rate
   ttk.Label(root, text="Enter learning rate (eta)").pack()
   eta_entry = ttk.Entry(root)
   eta_entry.pack(pady=(0, 5))
-
-  # Spacer
-  ttk.Label(root, text="").pack()
 
   # Number of Epochs
   ttk.Label(root, text="Enter number of epochs (m)").pack()
   epochs_entry = ttk.Entry(root)
   epochs_entry.pack(pady=(0, 5))
 
-  # Spacer
-  ttk.Label(root, text="").pack()
-
   # MSE Threshold
   ttk.Label(root, text="Enter MSE threshold (mse_threshold)").pack()
   mse_threshold_entry = ttk.Entry(root)
   mse_threshold_entry.pack(pady=(0, 5))
 
-  # Spacer
-  ttk.Label(root, text="").pack()
-
   # Bias Checkbox
   bias_var = tk.IntVar()
   bias_checkbox = ttk.Checkbutton(root, text="Add bias", variable=bias_var)
   bias_checkbox.pack(pady=(5, 0))
-
-  # Spacer
-  ttk.Label(root, text="").pack()
 
   # Algorithm Selection
   ttk.Label(root, text="Choose the used algorithm").pack()
@@ -69,11 +54,24 @@ def create_interface(root):
   algorithm_adaline = ttk.Radiobutton(root, text="Adaline", variable=algorithm_var, value="adaline")
   algorithm_adaline.pack()
 
-  # Spacer
-  ttk.Label(root, text="").pack()
-
   # Train Button
-  train_button = ttk.Button(root, text="Train Model", command=train_model)
+  selected_features = get_selected_items(feature_listbox)
+  selected_classes = get_selected_items(class_listbox)
+  train_button = ttk.Button(root, text="Train Model", command=lambda: train_model(
+        float(eta_entry.get()),
+        int(epochs_entry.get()),
+        float(mse_threshold_entry.get()),
+        selected_features,
+        selected_classes,
+        bool(bias_var.get()),
+        algorithm_var.get()
+    ))
   train_button.pack(pady=(5, 0))
   
   root.mainloop()
+
+# HELPER FUNCTIONS
+def get_selected_items(listBox):
+  selected_indices = listBox.curselection()
+  selected_items = [listBox.get(idx) for idx in selected_indices]
+  return selected_items

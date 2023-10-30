@@ -1,5 +1,4 @@
 
-
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -54,3 +53,7 @@ def plotting(weights,bias):
   plt.legend()
   plt.show()
 weights,bias_value = single_preceptron(0.1, 100, 0.01, ['MajorAxisLength','MinorAxisLength'], ['BOMBAY','CALI'], bias=False)
+
+def train_model(learning_rate,epochs,Mse_threshold,features,classes,bias=False):
+  pass
+

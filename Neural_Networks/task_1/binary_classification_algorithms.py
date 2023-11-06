@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,23 +10,28 @@ def preprocess():
     df = pd.DataFrame(data)
     return df
 
-## SINGLE PERCEPTRON: 
-def single_perceptron(learning_rate, epochs, features, classes,bias=0):
+# SINGLE PERCEPTRON:
+
+# single_perceptron(0.01, 100, ['Perimeter', 'roundnes'], ['BOMBAY', 'CALI'], 1)
+
+
+def single_perceptron(learning_rate, epochs, features, classes, bias=0):
     data = preprocess()
     X = data[features].values
     y = np.where(data['Class'] == classes[0], -1, 1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
-    W = np.random.rand(1,2)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, random_state=0)
+    W = np.random.rand(1, 2)
     for epoc in range(epochs):
-        for x_i,t_i in zip(X_train,y_train):
-            y_i = np.dot(W,x_i)+bias
-            if y_i < 0 :
+        for x_i, t_i in zip(X_train, y_train):
+            y_i = np.dot(W, x_i)+bias
+            if y_i < 0:
                 y_i = -1
             else:
                 y_i = 1
             if y_i != t_i:
                 L = (t_i - y_i)
-                W = W +learning_rate*(L)*x_i
+                W = W + learning_rate*(L)*x_i
 
         # Calculate accuracy on the test dataset
     correct_predictions = 0
@@ -40,21 +44,22 @@ def single_perceptron(learning_rate, epochs, features, classes,bias=0):
         if y_i == t_i:
             correct_predictions += 1
 
-    accuracy = correct_predictions / len(y_test)   
-    Plot(X_train, y_train, W[0])         
-    return W,accuracy
-                
-single_perceptron(0.01,100,['Perimeter','roundnes'],['BOMBAY','CALI'],1)
-## ADALINE
-def adaline_algorithm(features, classes, learning_rate, max_epochs, bias=False, mse_threshold=0.01):
+    accuracy = correct_predictions / len(y_test)
+    Plot(X_train, y_train, W[0])
+    return W, accuracy
+# ADALINE
+
+
+def adaline_algorithm(learning_rate, max_epochs, features, classes, bias=False, mse_threshold=0.01):
     # Prepare the data
-    data=preprocess()
-    
+    data = preprocess()
+
     X = data[features].values
     y = np.where(data['Class'] == classes[0], 0, 1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
-    # Initialize weights and bias    
-    weights = np.random.rand(X.shape[1])    
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, random_state=0)
+    # Initialize weights and bias
+    weights = np.random.rand(X.shape[1])
     bias_value = np.random.rand() if bias else 0
     for epoch in range(max_epochs):
         errors = 0
@@ -63,7 +68,7 @@ def adaline_algorithm(features, classes, learning_rate, max_epochs, bias=False, 
         for xi, target in zip(X_train, y_train):
             # Calculate the predicted output
             output = np.dot(weights, xi) + bias_value
-            output = np.where(output >= 0 , -1 ,1)
+            output = np.where(output >= 0, -1, 1)
             # Calculate the error (e = ti - yi)
             error = target - output
 
@@ -90,24 +95,30 @@ def adaline_algorithm(features, classes, learning_rate, max_epochs, bias=False, 
         if y_i == t_i:
             correct_predictions += 1
 
-    accuracy = correct_predictions / len(y_test)  
+    accuracy = correct_predictions / len(y_test)
     print(accuracy)
-    plot_perceptron(X_train, y_train, weights) 
+    Plot(X_train, y_train, weights)
     return weights, bias_value
-#endregion
+
+
 def Plot(X, y, weights):
     plt.scatter(X[:, 0], X[:, 1], c=y)
-    
+
     # Plot the decision boundary
     x1 = np.linspace(np.min(X[:, 0]), np.max(X[:, 0]), 100)
     x2 = -(weights[0]*x1) / weights[1]
     plt.plot(x1, x2, color='red')
-    
+
     plt.xlabel('X1')
     plt.ylabel('X2')
     plt.title('Perceptron Decision Boundary')
     plt.show()
 
 
-def train_model(learning_rate,epochs,Mse_threshold,features,classes,bias=False):
-  pass
+def train_model(algorithm, learning_rate, epochs, features, classes, bias=False, mse_threshold=0.01):
+    print(features)
+    if algorithm == "perceptron":
+        single_perceptron(learning_rate, epochs, features, classes, bias)
+    else:
+        adaline_algorithm(learning_rate, epochs, features,
+                          classes, bias, mse_threshold)

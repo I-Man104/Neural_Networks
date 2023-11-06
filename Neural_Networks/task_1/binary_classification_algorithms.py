@@ -11,102 +11,103 @@ def preprocess():
     df = pd.DataFrame(data)
     return df
 
-
-def single_preceptron(learning_rate, epochs, Mse_threshold, features, classes, bias=False):
+## SINGLE PERCEPTRON: 
+def single_perceptron(learning_rate, epochs, features, classes,bias=0):
     data = preprocess()
-    data = data[(data['Class'] == 'BOMBAY') | (data['Class'] == 'SIRA')]
     X = data[features].values
     y = np.where(data['Class'] == classes[0], -1, 1)
-    np.random.seed(0)
-    weights = np.random.rand(X.shape[1])
-    biass = np.random.rand() if bias else 0
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.25, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
+    W = np.random.rand(1,2)
+    for epoc in range(epochs):
+        for x_i,t_i in zip(X_train,y_train):
+            y_i = np.dot(W,x_i)+bias
+            if y_i < 0 :
+                y_i = -1
+            else:
+                y_i = 1
+            if y_i != t_i:
+                L = (t_i - y_i)
+                W = W +learning_rate*(L)*x_i
 
-    # Perceptron learning
-    for epoch in range(epochs):
-        errors = 0
-        for xi, target in zip(X_train, y_train):
-            prediction = np.sign(np.dot(xi, weights) + biass)
-            # prediction= 0 if prediction <=0 else 1
-            if target != prediction:
-                weights += learning_rate * (target - prediction) * xi
-                biass += learning_rate * (target - prediction)
-                errors += 1
-        if errors == 0:
-            break
-
-    # Calculate accuracy on the test set
-    error = 0
-    for i in range(len(y_test)):
-        prediction = np.sign(np.dot(xi, weights)+biass)
-        prediction = -1 if prediction <= 0 else 1
-        if prediction == y_test[i]:
-            continue
+        # Calculate accuracy on the test dataset
+    correct_predictions = 0
+    for x_i, t_i in zip(X_test, y_test):
+        y_i = np.dot(W, x_i) + bias
+        if y_i < 0:
+            y_i = -1
         else:
-            error += 1
-    accuracy = 1 - (error / len(y_test))
+            y_i = 1
+        if y_i == t_i:
+            correct_predictions += 1
+
+    accuracy = correct_predictions / len(y_test)   
+    Plot(X_train, y_train, W[0])         
+    return W,accuracy
+                
+single_perceptron(0.01,100,['Perimeter','roundnes'],['BOMBAY','CALI'],1)
+## ADALINE
+def adaline_algorithm(features, classes, learning_rate, max_epochs, bias=False, mse_threshold=0.01):
+    # Prepare the data
+    data=preprocess()
+    
+    X = data[features].values
+    y = np.where(data['Class'] == classes[0], 0, 1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
+    # Initialize weights and bias    
+    weights = np.random.rand(X.shape[1])    
+    bias_value = np.random.rand() if bias else 0
+    for epoch in range(max_epochs):
+        errors = 0
+        total_squared_error = 0
+
+        for xi, target in zip(X_train, y_train):
+            # Calculate the predicted output
+            output = np.dot(weights, xi) + bias_value
+            output = np.where(output >= 0 , -1 ,1)
+            # Calculate the error (e = ti - yi)
+            error = target - output
+
+            # Update weights and bias
+            weights += learning_rate * error * xi
+            bias_value += learning_rate * error if bias else 0
+
+            # Update the total squared error
+            total_squared_error += error ** 2
+
+        # Calculate the mean squared error
+        mse = total_squared_error / len(X_train)
+
+        if mse <= mse_threshold:
+            print(f"Converged after {epoch + 1} epochs.")
+            break
+    correct_predictions = 0
+    for x_i, t_i in zip(X_test, y_test):
+        y_i = np.dot(weights, x_i) + bias
+        if y_i < 0:
+            y_i = -1
+        else:
+            y_i = 1
+        if y_i == t_i:
+            correct_predictions += 1
+
+    accuracy = correct_predictions / len(y_test)  
     print(accuracy)
-    return weights, biass, X_train, X_test, y_train, y_test
-
-
-# def train_model(learning_rate,epochs,Mse_threshold,features,classes,bias=False):
-# pass
-
-
-def plotting(weights, bias, X_train, X_test, y_train, y_test):
-    plt.scatter(X_test[y_test == 0][:, -1],
-                X_test[y_test == 0][:, 1], label=f'Class BOMBAY')
-    plt.scatter(X_test[y_test == 1][:, -1],
-                X_test[y_test == 1][:, 1], label=f'Class SIRA')
-    w0, w1 = weights
-#   bias = bias_value
-
-    x_range = np.linspace(X_test[:, 0].min(), X_test[:, 0].max(), num=100)
-    y_range = (-bias - w0 * x_range) / w1
-    plt.plot(x_range, y_range, label='Decision Boundary', linestyle='--')
-    plt.xlabel('Feature 1')
-    plt.ylabel('Feature 2')
-    plt.legend()
+    plot_perceptron(X_train, y_train, weights) 
+    return weights, bias_value
+#endregion
+def Plot(X, y, weights):
+    plt.scatter(X[:, 0], X[:, 1], c=y)
+    
+    # Plot the decision boundary
+    x1 = np.linspace(np.min(X[:, 0]), np.max(X[:, 0]), 100)
+    x2 = -(weights[0]*x1) / weights[1]
+    plt.plot(x1, x2, color='red')
+    
+    plt.xlabel('X1')
+    plt.ylabel('X2')
+    plt.title('Perceptron Decision Boundary')
     plt.show()
 
 
-weights, bias_value, X_train, X_test, y_train, y_test = single_preceptron(
-    0.1, 100, 0.01, ['Area', 'Perimeter'], ['BOMBAY', 'SIRA'], bias=False)
-
-plotting(weights, bias_value, X_train, X_test, y_train, y_test)
-
-
-# def single_preceptron(learning_rate, epochs, Mse_threshold, features, classes, bias=False):
-#   data = preprocess()
-#   data = data[(data['Class'] == 'BOMBAY') | (data['Class'] == 'SIRA')]
-#   X = data[features].values
-#   y = np.where(data['Class'] == classes[0], 0, 1)
-#   np.random.seed(0)
-#   weights = np.random.rand(X.shape[1])
-#   biass = np.random.rand() if bias else 0
-#   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
-#
-#   # Perceptron learning
-#   for epoch in range(epochs):
-#       errors = 0
-#       for xi, target in zip(X_train, y_train):
-#           prediction = np.sign(np.dot(xi,weights)+biass)
-#           #prediction= 0 if prediction <=0 else 1
-#           if target != prediction :
-#               weights += learning_rate * (target-prediction) * xi
-#               biass += learning_rate * (target-prediction)
-#               errors += 1
-#       if errors == 0:
-#           break
-#   # Calculate accuracy on the test set
-#         error=0
-#   #accuracy = np.sum(y_test == np.sign(np.dot(X_test, weights) + biass)) / len(y_test)
-#     for i in range(len(y_test)):
-#         if np.sign(np.dot(X_test,weights) + biass) ==y_test:
-#             continue
-#         else:
-#             error += 1
-#     accuracy =  1- (error/len(y_test))
-#     print(accuracy)
-#     return weights, biass, X_train,X_test,y_train,y_test
+def train_model(learning_rate,epochs,Mse_threshold,features,classes,bias=False):
+  pass

@@ -142,10 +142,10 @@ def train_model(algorithm, learning_rate, epochs, features, classes, bias=False,
         x = single_perceptron(learning_rate, epochs, features, classes, bias)
         actual_val = x[2]
         predicted = x[3]
-        eval = evaluation.Evaluation(actual_val, predicted)
+        evaluation.Evaluation.plot_confusion_matrix(actual_val, predicted.tolist())
     else:
          x  = adaline_algorithm(learning_rate, epochs, features,
                           classes, bias, mse_threshold)
          actual_val= x[2]
          predicted = x[3]
-         eval = evaluation.Evaluation(actual_val,predicted)
+         evaluation.Evaluation.plot_confusion_matrix(actual_val,predicted.tolist())

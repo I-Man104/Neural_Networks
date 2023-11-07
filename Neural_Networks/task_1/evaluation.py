@@ -1,3 +1,10 @@
+import tkinter as tk
+from tkinter import ttk
+from sklearn.metrics import confusion_matrix
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 class Evaluation:
     def __init__(self, actual,predicted):
         predicted = predicted.tolist()
@@ -27,3 +34,27 @@ class Evaluation:
         precision = self.get_precision()
         recall = self.get_recall()
         return 2*precision*recall / (precision+recall)
+
+    def plot_confusion_matrix(y_true, y_pred):
+        cm = confusion_matrix(y_true, y_pred)
+
+        fig, ax = plt.subplots()
+        cax = ax.matshow(cm)
+
+        # Add colorbar
+        plt.colorbar(cax)
+
+        # Set labels for the x and y axis
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+
+        # Display the matrix values as text
+        for i in range(len(cm)):
+            for j in range(len(cm[0])):
+                ax.text(j, i, str(cm[i, j]), va='center', ha='center')
+
+            plt.title('Confusion Matrix')
+            window = tk.Tk()
+            window.title("Confusion Matrix")
+            canvas = FigureCanvasTkAgg(fig, master=window)
+            canvas.get_tk_widget().pack()

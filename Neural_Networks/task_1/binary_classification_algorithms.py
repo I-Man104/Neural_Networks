@@ -3,24 +3,63 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import evaluation
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import LabelEncoder
 
 
 def preprocess():
+    # Read the dataset
     data = pd.read_csv('./dataset/dry_bean_dataset.csv')
+
+    # Encode the 'Class' column using LabelEncoder
+    label_encoder = LabelEncoder()
+    data['Class'] = label_encoder.fit_transform(data['Class'])
+
+    # Perform linear interpolation for missing values in the 'MinorAxisLength' column
     data['MinorAxisLength'].interpolate(method='linear', inplace=True)
-    df = pd.DataFrame(data)
-    return df
+
+    # Define the columns to be normalized
+    columns_to_normalize = ['Area', 'Perimeter',
+                            'MajorAxisLength', 'MinorAxisLength', 'roundnes']
+
+    # Use Min-Max scaling for normalization
+    scaler = MinMaxScaler()
+    data[columns_to_normalize] = scaler.fit_transform(
+        data[columns_to_normalize])
+
+    return data
 
 # SINGLE PERCEPTRON:
 
 # single_perceptron(0.01, 100, ['Perimeter', 'roundnes'], ['BOMBAY', 'CALI'], 1)
 
 
+def split_data(X, y, test_size=0.25, random_state=None):
+    if random_state is not None:
+        np.random.seed(random_state)
+
+    # Determine the number of samples for testing
+    num_test_samples = int(len(X) * test_size)
+
+    # Shuffle the data
+    indices = np.arange(len(X))
+    np.random.shuffle(indices)
+
+    # Split the data into training and testing sets
+    test_indices = indices[:num_test_samples]
+    train_indices = indices[num_test_samples:]
+
+    X_train, X_test = X[train_indices], X[test_indices]
+    y_train, y_test = y[train_indices], y[test_indices]
+
+    return X_train, X_test, y_train, y_test
+
+
 def single_perceptron(learning_rate, epochs, features, classes, bias=0):
     data = preprocess()
     X = data[features].values
     y = np.where(data['Class'] == classes[0], -1, 1)
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, y_test = split_data(
         X, y, test_size=0.25, random_state=0)
     W = np.random.rand(1, 2)
     for epoc in range(epochs):
@@ -56,7 +95,7 @@ def single_perceptron(learning_rate, epochs, features, classes, bias=0):
             actual_val.append(x)
     accuracy = correct_predictions / len(y_test)
     Plot(X_train, y_train, W[0])
-    return W, accuracy , actual_val,y_test
+    return W, accuracy, actual_val, y_test
 # ADALINE
 
 
@@ -119,7 +158,7 @@ def adaline_algorithm(learning_rate, max_epochs, features, classes, bias=False, 
 
     Plot(X_train, y_train, weights)
 
-    return weights, bias_value,  actual_val,y_test
+    return weights, bias_value,  actual_val, y_test
 
 
 def Plot(X, y, weights):
@@ -142,10 +181,12 @@ def train_model(algorithm, learning_rate, epochs, features, classes, bias=False,
         x = single_perceptron(learning_rate, epochs, features, classes, bias)
         actual_val = x[2]
         predicted = x[3]
-        evaluation.Evaluation.plot_confusion_matrix(actual_val, predicted.tolist())
+        evaluation.Evaluation.plot_confusion_matrix(
+            actual_val, predicted.tolist())
     else:
-         x  = adaline_algorithm(learning_rate, epochs, features,
-                          classes, bias, mse_threshold)
-         actual_val= x[2]
-         predicted = x[3]
-         evaluation.Evaluation.plot_confusion_matrix(actual_val,predicted.tolist())
+        x = adaline_algorithm(learning_rate, epochs, features,
+                              classes, bias, mse_threshold)
+        actual_val = x[2]
+        predicted = x[3]
+        evaluation.Evaluation.plot_confusion_matrix(
+            actual_val, predicted.tolist())

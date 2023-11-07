@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+import evaluation
 
 
 def preprocess():
@@ -44,9 +45,18 @@ def single_perceptron(learning_rate, epochs, features, classes, bias=0):
         if y_i == t_i:
             correct_predictions += 1
 
+    actual_val = []
+    for x in X_test:
+        x = np.dot(W, x) + bias
+        if x < 0:
+            x = -1
+            actual_val.append(x)
+        else:
+            x = 1
+            actual_val.append(x)
     accuracy = correct_predictions / len(y_test)
     Plot(X_train, y_train, W[0])
-    return W, accuracy
+    return W, accuracy , actual_val,y_test
 # ADALINE
 
 
@@ -96,9 +106,20 @@ def adaline_algorithm(learning_rate, max_epochs, features, classes, bias=False, 
             correct_predictions += 1
 
     accuracy = correct_predictions / len(y_test)
+    actual_val = []
+    for x in X_test:
+        x = np.dot(weights, x) + bias
+        if x < 0:
+            x = -1
+            actual_val.append(x)
+        else:
+            x = 1
+            actual_val.append(x)
     print(accuracy)
+
     Plot(X_train, y_train, weights)
-    return weights, bias_value
+
+    return weights, bias_value,  actual_val,y_test
 
 
 def Plot(X, y, weights):
@@ -118,7 +139,13 @@ def Plot(X, y, weights):
 def train_model(algorithm, learning_rate, epochs, features, classes, bias=False, mse_threshold=0.01):
     print(features)
     if algorithm == "perceptron":
-        single_perceptron(learning_rate, epochs, features, classes, bias)
+        x = single_perceptron(learning_rate, epochs, features, classes, bias)
+        actual_val = x[2]
+        predicted = x[3]
+        eval = evaluation.Evaluation(actual_val, predicted)
     else:
-        adaline_algorithm(learning_rate, epochs, features,
+         x  = adaline_algorithm(learning_rate, epochs, features,
                           classes, bias, mse_threshold)
+         actual_val= x[2]
+         predicted = x[3]
+         eval = evaluation.Evaluation(actual_val,predicted)

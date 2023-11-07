@@ -1,79 +1,58 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 import evaluation
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 
 
-def preprocess():
+def preprocess(classes, features):
     # Read the dataset
     data = pd.read_csv('./dataset/dry_bean_dataset.csv')
-
-    # Encode the 'Class' column using LabelEncoder
-    label_encoder = LabelEncoder()
-    data['Class'] = label_encoder.fit_transform(data['Class'])
-
+    # Filter rows based on the 'Class' column
+    data = data[data['Class'].isin(classes)]
     # Perform linear interpolation for missing values in the 'MinorAxisLength' column
-    data['MinorAxisLength'].interpolate(method='linear', inplace=True)
+    data[features] = data[features].copy().fillna(data[features].mean())
+    # Manually perform Min-Max scaling
+    for column in features:
+        min_val = data[column].min()
+        max_val = data[column].max()
+        data[column] = (data[column] - min_val) / (max_val - min_val)
 
-    # Define the columns to be normalized
-    columns_to_normalize = ['Area', 'Perimeter',
-                            'MajorAxisLength', 'MinorAxisLength', 'roundnes']
+    # Shuffle the data
+    # data = data.sample(frac=1, random_state=0).reset_index(drop=True)
+    data = shuffle(data, random_state=0)
 
-    # Use Min-Max scaling for normalization
-    scaler = MinMaxScaler()
-    data[columns_to_normalize] = scaler.fit_transform(
-        data[columns_to_normalize])
-
-    return data
+    X = data[features].values
+    Y = np.where(data['Class'] == classes[0], -1, 1)
+    print(X, Y)
+    x_train, x_test, y_train, y_test = train_test_split(
+        X, Y, test_size=0.4, random_state=42)
+    return x_train, x_test, y_train, y_test
 
 # SINGLE PERCEPTRON:
 
 # single_perceptron(0.01, 100, ['Perimeter', 'roundnes'], ['BOMBAY', 'CALI'], 1)
 
 
-def split_data(X, y, test_size=0.25, random_state=None):
-    if random_state is not None:
-        np.random.seed(random_state)
-
-    # Determine the number of samples for testing
-    num_test_samples = int(len(X) * test_size)
-
-    # Shuffle the data
-    indices = np.arange(len(X))
-    np.random.shuffle(indices)
-
-    # Split the data into training and testing sets
-    test_indices = indices[:num_test_samples]
-    train_indices = indices[num_test_samples:]
-
-    X_train, X_test = X[train_indices], X[test_indices]
-    y_train, y_test = y[train_indices], y[test_indices]
-
-    return X_train, X_test, y_train, y_test
-
-
-def single_perceptron(learning_rate, epochs, features, classes, bias=0):
-    data = preprocess()
-    X = data[features].values
-    y = np.where(data['Class'] == classes[0], -1, 1)
-    X_train, X_test, y_train, y_test = split_data(
-        X, y, test_size=0.25, random_state=0)
-    W = np.random.rand(1, 2)
-    for epoc in range(epochs):
-        for x_i, t_i in zip(X_train, y_train):
-            y_i = np.dot(W, x_i)+bias
-            if y_i < 0:
-                y_i = -1
+def perceptron(X, y, learning_rate=0.01, epochs=1000, b=0, use_bias=False):
+    samples, feat = X.shape
+    W = np.random.rand(feat)
+    for _ in range(epochs):
+        for i, x in enumerate(X):
+            y_pred = np.dot(x, W) + b
+            if y_pred >= 0:
+                y_pred = 1
             else:
-                y_i = 1
-            if y_i != t_i:
-                L = (t_i - y_i)
-                W = W + learning_rate*(L)*x_i
+                y_pred = -1
+            upt = learning_rate * (y[i] - y_pred)
+            W += upt * x
+            if use_bias:
+                b += upt
+    return W, b
 
-        # Calculate accuracy on the test dataset
+
+def predict_model(X_test, y_test, W, bias):
     correct_predictions = 0
     for x_i, t_i in zip(X_test, y_test):
         y_i = np.dot(W, x_i) + bias
@@ -94,71 +73,39 @@ def single_perceptron(learning_rate, epochs, features, classes, bias=0):
             x = 1
             actual_val.append(x)
     accuracy = correct_predictions / len(y_test)
-    Plot(X_train, y_train, W[0])
+    print(accuracy)
+    return accuracy, actual_val
+
+
+def single_perceptron(learning_rate, epochs, features, classes, bias=0):
+    x_train, x_test, y_train, y_test = preprocess(classes, features)
+    W, b = perceptron(x_train, y_train, learning_rate, epochs, bias)
+    accuracy, actual_val = predict_model(x_test, y_test, W, b)
+    Plot(x_test, y_test, W)
     return W, accuracy, actual_val, y_test
 # ADALINE
 
 
-def adaline_algorithm(learning_rate, max_epochs, features, classes, bias=False, mse_threshold=0.01):
-    # Prepare the data
-    data = preprocess()
+def adaline(X, y, learning_rate=0.01, epochs=1000, b=0, use_bias=False, mse_threshold=0.01):
+    samples, feat = X.shape
+    W = np.random.rand(feat)
+    for _ in range(epochs):
+        for i, x in enumerate(X):
+            y_pred = np.dot(x, W) + b
+            upt = learning_rate * (y[i] - y_pred)
+            W += upt * x
+            if use_bias:
+                b += upt
+    return W, b
 
-    X = data[features].values
-    y = np.where(data['Class'] == classes[0], 0, 1)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.25, random_state=0)
-    # Initialize weights and bias
-    weights = np.random.rand(X.shape[1])
-    bias_value = np.random.rand() if bias else 0
-    for epoch in range(max_epochs):
-        errors = 0
-        total_squared_error = 0
 
-        for xi, target in zip(X_train, y_train):
-            # Calculate the predicted output
-            output = np.dot(weights, xi) + bias_value
-            output = np.where(output >= 0, -1, 1)
-            # Calculate the error (e = ti - yi)
-            error = target - output
-
-            # Update weights and bias
-            weights += learning_rate * error * xi
-            bias_value += learning_rate * error if bias else 0
-
-            # Update the total squared error
-            total_squared_error += error ** 2
-
-        # Calculate the mean squared error
-        mse = total_squared_error / len(X_train)
-
-        if mse <= mse_threshold:
-            print(f"Converged after {epoch + 1} epochs.")
-            break
-    correct_predictions = 0
-    for x_i, t_i in zip(X_test, y_test):
-        y_i = np.dot(weights, x_i) + bias
-        if y_i < 0:
-            y_i = -1
-        else:
-            y_i = 1
-        if y_i == t_i:
-            correct_predictions += 1
-
-    accuracy = correct_predictions / len(y_test)
-    actual_val = []
-    for x in X_test:
-        x = np.dot(weights, x) + bias
-        if x < 0:
-            x = -1
-            actual_val.append(x)
-        else:
-            x = 1
-            actual_val.append(x)
-    print(accuracy)
-
-    Plot(X_train, y_train, weights)
-
-    return weights, bias_value,  actual_val, y_test
+def adaline_algorithm(learning_rate, epochs, features, classes, bias=False, mse_threshold=0.01):
+    x_train, x_test, y_train, y_test = preprocess(classes, features)
+    W, b = adaline(x_train, y_train, learning_rate,
+                   epochs, bias, mse_threshold)
+    accuracy, actual_val = predict_model(x_test, y_test, W, b)
+    Plot(x_test, y_test, W)
+    return W, accuracy, actual_val, y_test
 
 
 def Plot(X, y, weights):
@@ -176,7 +123,6 @@ def Plot(X, y, weights):
 
 
 def train_model(algorithm, learning_rate, epochs, features, classes, bias=False, mse_threshold=0.01):
-    print(features)
     if algorithm == "perceptron":
         x = single_perceptron(learning_rate, epochs, features, classes, bias)
         actual_val = x[2]

@@ -43,6 +43,7 @@ def Plot(X, y, weights):
     plt.show()
 
 def back_probagation_algo(features, classes, hidden_layers_num, neurons_num, learning_rate, epochs, activation_function, bias=False):
+    
     pass
 
 def train_model(features, classes, hidden_layers_num, neurons_num, learning_rate, epochs, activation_function, bias=False):

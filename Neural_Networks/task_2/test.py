@@ -12,7 +12,6 @@ def preprocess(classes, features):
    # Read the dataset
    data = pd.read_csv('./dataset/dry_bean_dataset.csv')
    # Filter rows based on the 'Class' column
-   data = data[data['Class'].isin(classes)]
    # Perform linear interpolation for missing values in the 'MinorAxisLength' column
    data[features] = data[features].copy().fillna(data[features].mean())
    # Manually perform Min-Max scaling
@@ -26,7 +25,7 @@ def preprocess(classes, features):
    data = shuffle(data, random_state=0)
 
    X = data[features].values
-   Y = np.where(data['Class'] == classes[0], -1, 1)
+   Y = np.where(data['Class'] == classes[0], -1, np.where(data['Class']==classes[1],0,1))
    x_train, x_test, y_train, y_test = train_test_split(
       X, Y, test_size=0.4, random_state=42)
    return x_train, x_test, y_train, y_test
@@ -42,8 +41,8 @@ def tanh_activation(x):
 def tanh_derivative(x):
    tan=tanh_activation(x)
    return 1 - tan**2
-def initialize_weights(layer_sizes):
-   weights = [np.random.rand(layer_sizes[i], layer_sizes[i+1]) for i in range(len(layer_sizes)-1)]
+def initialize_weights(hiddenlayers,n_neurons):
+   weights = [np.random.rand(n_neurons[i-1], n_neurons[i]) for i in range(hiddenlayers+1)]
    return weights
 
 def forward_step(inputs, weights,sig=False):
@@ -59,16 +58,23 @@ def forward_step(inputs, weights,sig=False):
 
 def backward_step(inputs, outputs, target, weights, learning_rate,sig=False):
    if not sig:
-      errors = [target - outputs[-1] * sigmoid_derivative(outputs[-1])]
+      # errors = [target - outputs[-1] * sigmoid_derivative(outputs[-1])]
+      output_layer_error = outputs[-1] - target
+
+      errors = output_layer_error *  sigmoid_derivative(outputs[-1])
+
    else:
       errors = [target - outputs[-1] * tanh_derivative(outputs[-1])]
    deltas = [errors[-1]]
    
    for i in range(len(outputs)-2, 0, -1):
       if not sig:
-         errors.append(deltas[-1].dot(weights[i].T) * sigmoid_derivative(outputs[i]))
+         output_layer_error = outputs[-1] - target
+         output_layer_delta = output_layer_error * sigmoid_derivative(outputs[-1])
+         hidden_layer_error = np.dot(output_layer_delta, weights[i].T)
+         hidden_layer_delta = hidden_layer_error * sigmoid_derivative(hidden_layer_error)
       else:
-         errors.append(deltas[-1].dot(weights[i].T) * tanh_derivative(outputs[i]))
+         errors.append(deltas[-1].dot(weights[i].T) * tanh_derivative(outputs[i].T))
 
       deltas.append(errors[-1])
    
@@ -99,8 +105,10 @@ def train_neural_network(inputs, targets, layer_sizes, learning_rate, max_epochs
 
 
 X_train,X_test,Y_train,Y_test = preprocess(["BOMBAY","CALI","SIRA"],["Area","Perimeter","MajorAxisLength","MinorAxisLength","roundnes"])
-layer_sizes=[5,3,4,1]
-weights = initialize_weights(layer_sizes)
+n_neurons = [3,4]
+hidden_layers =2
+weights = initialize_weights(hidden_layers,n_neurons)
+print(weights)
 learning_rate = 0.01
 Epochs  = 1000
 def predict(inputs, trained_weights):

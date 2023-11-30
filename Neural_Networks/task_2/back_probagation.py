@@ -163,7 +163,8 @@ def testing(x_test,y_test,hidden_layers,weights,sig):
                     if new_input[j] > mx:
                         mx = new_input[j]
                         prediction = j
-                
+                    conf_matrix[y_test,prediction]+=1
+
                 value_to_find = y_test[count]
                 index_array = np.where(y_test == value_to_find)[0]
 
@@ -175,8 +176,9 @@ def testing(x_test,y_test,hidden_layers,weights,sig):
                 else:
                     print(f"Error: {value_to_find} not found in y_train array")
     acc = cnt / len(y_test)
+    conf = conf_matrix.T
     print("Testing acc= ", cnt / len(y_test))
-    return acc
+    return acc,conf
 
 def Plot(X, y, weights):
     plt.scatter(X[:, 0], X[:, 1], c=y)
@@ -196,7 +198,8 @@ def back_probagation_algo(features, classes, hidden_layers_num, neurons_num, lea
     weights = initialize_weights(hidden_layers_num,neurons_num)
     train(x_train,y_train,epochs,learning_rate,weights,activation_function)
     train_acc(x_train,y_train,hidden_layers_num,weights,activation_function)
-    testing(x_test,y_test,hidden_layers_num,weights,activation_function)
+    a,c = testing(x_test,y_test,hidden_layers_num,weights,activation_function)
+    Plot(x_test,y_test,weights)
     pass
 
 def train_model(features, classes, hidden_layers_num, neurons_num, learning_rate, epochs, activation_function, bias=False):

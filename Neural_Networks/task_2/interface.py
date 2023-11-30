@@ -42,7 +42,7 @@ def create_interface(root):
     activation_function_tanh.pack()
     
     def train_button_click():
-        selected_features = ["Area", "Perimeter", "MajorAxisLength", "MinorAxisLength", "roundnes"]
+        selected_features = ["Area","Perimeter","MajorAxisLength","MinorAxisLength","roundnes"]
         selected_classes = ["BOMBAY", "CALI", "SIRA"]
         
         string_neurons = neurons_entry.get().split(' ')

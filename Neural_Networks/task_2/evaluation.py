@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from sklearn.metrics import confusion_matrix
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+# import matplotlib.pyplot as plt
+# from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class Evaluation:
     def __init__(self, actual,predicted):

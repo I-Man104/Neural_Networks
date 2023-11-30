@@ -44,11 +44,14 @@ def create_interface(root):
     def train_button_click():
         selected_features = ["Area", "Perimeter", "MajorAxisLength", "MinorAxisLength", "roundnes"]
         selected_classes = ["BOMBAY", "CALI", "SIRA"]
+        
+        string_neurons = neurons_entry.get().split(' ')
+        int_neurons = [int(element) for element in string_neurons]
         train_model(
             selected_features,
             selected_classes,
-            int(hidden_layers_entry),
-            int(neurons_entry),
+            int(hidden_layers_entry.get()),
+            int_neurons,
             float(eta_entry.get()),
             int(epochs_entry.get()),
             activation_function_var.get(),

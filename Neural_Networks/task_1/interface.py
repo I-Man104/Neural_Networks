@@ -36,16 +36,19 @@ def create_interface(root):
     # Learning Rate
     ttk.Label(root, text="Enter learning rate (eta)").pack()
     eta_entry = ttk.Entry(root)
+    eta_entry.insert(0, "0.01")
     eta_entry.pack(pady=(0, 5))
 
     # Number of Epochs
     ttk.Label(root, text="Enter number of epochs (m)").pack()
     epochs_entry = ttk.Entry(root)
+    epochs_entry.insert(0, "100")
     epochs_entry.pack(pady=(0, 5))
 
     # MSE Threshold
     ttk.Label(root, text="Enter MSE threshold (mse_threshold)").pack()
     mse_threshold_entry = ttk.Entry(root)
+    mse_threshold_entry.insert(0, "0.01")
     mse_threshold_entry.pack(pady=(0, 5))
 
     # Bias Checkbox
@@ -56,6 +59,7 @@ def create_interface(root):
     # Algorithm Selection
     ttk.Label(root, text="Choose the used algorithm").pack()
     algorithm_var = tk.StringVar()
+    algorithm_var.set("perceptron")
     algorithm_perceptron = ttk.Radiobutton(
         root, text="Perceptron", variable=algorithm_var, value="perceptron")
     algorithm_perceptron.pack()

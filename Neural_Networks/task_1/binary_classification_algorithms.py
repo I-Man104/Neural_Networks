@@ -5,51 +5,7 @@ import evaluation
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
-
-def preprocess(classes, features):
-    # Read the dataset
-    data = pd.read_csv('./dataset/dry_bean_dataset.csv')
-    # Filter rows based on the 'Class' column
-    data = data[data['Class'].isin(classes)]
-    # Perform linear interpolation for missing values in the 'MinorAxisLength' column
-    data[features] = data[features].copy().fillna(data[features].mean())
-    # Manually perform Min-Max scaling
-    for column in features:
-        min_val = data[column].min()
-        max_val = data[column].max()
-        data[column] = (data[column] - min_val) / (max_val - min_val)
-
-    # Shuffle the data
-    # data = data.sample(frac=1, random_state=0).reset_index(drop=True)
-    data = shuffle(data, random_state=0)
-
-    X = data[features].values
-    Y = np.where(data['Class'] == classes[0], -1, 1)
-    print(X, Y)
-    x_train, x_test, y_train, y_test = train_test_split(
-        X, Y, test_size=0.4, random_state=42)
-    return x_train, x_test, y_train, y_test
-
-# SINGLE PERCEPTRON:
-
-# single_perceptron(0.01, 100, ['Perimeter', 'roundnes'], ['BOMBAY', 'CALI'], 1)
-
-
-def perceptron(X, y, learning_rate=0.01, epochs=1000, b=0, use_bias=False):
-    samples, feat = X.shape
-    W = np.random.rand(feat)
-    for _ in range(epochs):
-        for i, x in enumerate(X):
-            y_pred = np.dot(x, W) + b
-            if y_pred >= 0:
-                y_pred = 1
-            else:
-                y_pred = -1
-            upt = learning_rate * (y[i] - y_pred)
-            W += upt * x
-            if use_bias:
-                b += upt
-    return W, b
+# Helper functions
 
 
 def predict_model(X_test, y_test, W, bias):
@@ -77,21 +33,56 @@ def predict_model(X_test, y_test, W, bias):
     return accuracy, actual_val
 
 
-def single_perceptron(learning_rate, epochs, features, classes, bias=0):
-    x_train, x_test, y_train, y_test = preprocess(classes, features)
-    W, b = perceptron(x_train, y_train, learning_rate, epochs, bias)
-    accuracy, actual_val = predict_model(x_test, y_test, W, b)
-    Plot(x_test, y_test, W)
-    return W, accuracy, actual_val, y_test
-# ADALINE
+def preprocess(classes, features):
+    # Read the dataset
+    data = pd.read_csv('./dataset/dry_bean_dataset.csv')
+    # Filter rows based on the 'Class' column
+    data = data[data['Class'].isin(classes)]
+    # Perform linear interpolation for missing values in the 'MinorAxisLength' column
+    data[features] = data[features].copy().fillna(data[features].mean())
+    # Manually perform Min-Max scaling
+    for column in features:
+        min_val = data[column].min()
+        max_val = data[column].max()
+        data[column] = (data[column] - min_val) / (max_val - min_val)
+
+    # Shuffle the data
+    # data = data.sample(frac=1, random_state=0).reset_index(drop=True)
+    data = shuffle(data, random_state=0)
+
+    X = data[features].values
+    Y = np.where(data['Class'] == classes[0], -1, 1)
+    x_train, x_test, y_train, y_test = train_test_split(
+        X, Y, test_size=0.4, random_state=42)
+    return x_train, x_test, y_train, y_test
 
 
-def adaline(X, y, learning_rate=0.01, epochs=1000, b=0, use_bias=False, mse_threshold=0.01):
+def Plot(X, y, weights, bias):
+    plt.scatter(X[:, 0], X[:, 1], c=y)
+
+    # Plot the decision boundary
+    x1 = np.linspace(np.min(X[:, 0]), np.max(X[:, 0]), 100)
+    x2 = -(weights[0]*x1 + bias) / weights[1]
+    plt.plot(x1, x2, color='red')
+
+    plt.xlabel('X1')
+    plt.ylabel('X2')
+    plt.title('Perceptron Decision Boundary')
+    plt.show()
+
+# SINGLE PERCEPTRON:
+
+
+def perceptron(b, X, y, learning_rate=0.01, epochs=1000, use_bias=False):
     samples, feat = X.shape
     W = np.random.rand(feat)
     for _ in range(epochs):
         for i, x in enumerate(X):
             y_pred = np.dot(x, W) + b
+            if y_pred >= 0:
+                y_pred = 1
+            else:
+                y_pred = -1
             upt = learning_rate * (y[i] - y_pred)
             W += upt * x
             if use_bias:
@@ -99,27 +90,42 @@ def adaline(X, y, learning_rate=0.01, epochs=1000, b=0, use_bias=False, mse_thre
     return W, b
 
 
-def adaline_algorithm(learning_rate, epochs, features, classes, bias=False, mse_threshold=0.01):
+def single_perceptron(learning_rate, epochs, features, classes, bias):
     x_train, x_test, y_train, y_test = preprocess(classes, features)
-    W, b = adaline(x_train, y_train, learning_rate,
-                   epochs, bias, mse_threshold)
-    accuracy, actual_val = predict_model(x_test, y_test, W, b)
-    Plot(x_test, y_test, W)
+    W, bias = perceptron(0, x_train, y_train, learning_rate, epochs, bias)
+    accuracy, actual_val = predict_model(x_test, y_test, W, bias)
+    Plot(x_test, y_test, W, bias)
     return W, accuracy, actual_val, y_test
 
+# ADALINE
 
-def Plot(X, y, weights):
-    plt.scatter(X[:, 0], X[:, 1], c=y)
 
-    # Plot the decision boundary
-    x1 = np.linspace(np.min(X[:, 0]), np.max(X[:, 0]), 100)
-    x2 = -(weights[0]*x1) / weights[1]
-    plt.plot(x1, x2, color='red')
+def adaline(b, X, y, learning_rate=0.01, epochs=1000, use_bias=False, mse_threshold=0.01):
+    samples, feat = X.shape
+    W = np.random.rand(feat)
+    total_squared_error = 0
+    for _ in range(epochs):
+        for i, x in enumerate(X):
+            y_pred = np.dot(x, W) + b
+            upt = learning_rate * (y[i] - y_pred)
+            W += upt * x
+            if use_bias:
+                b += upt
 
-    plt.xlabel('X1')
-    plt.ylabel('X2')
-    plt.title('Perceptron Decision Boundary')
-    plt.show()
+            total_squared_error += (y[i] - y_pred) ** 2
+            mse = total_squared_error / len(X)
+            if mse <= mse_threshold:
+                return W, b
+    return W, b
+
+
+def adaline_algorithm(learning_rate, epochs, features, classes, bias=False, mse_threshold=0.01):
+    x_train, x_test, y_train, y_test = preprocess(classes, features)
+    W, b = adaline(0, x_train, y_train, learning_rate,
+                   epochs, bias, mse_threshold)
+    accuracy, actual_val = predict_model(x_test, y_test, W, b)
+    Plot(x_test, y_test, W, b)
+    return W, accuracy, actual_val, y_test
 
 
 def train_model(algorithm, learning_rate, epochs, features, classes, bias=False, mse_threshold=0.01):
@@ -130,8 +136,8 @@ def train_model(algorithm, learning_rate, epochs, features, classes, bias=False,
         evaluation.Evaluation.plot_confusion_matrix(
             actual_val, predicted.tolist())
     else:
-        x = adaline_algorithm(learning_rate, epochs, features,
-                              classes, bias, mse_threshold)
+        x = adaline_algorithm(learning_rate, epochs,
+                              features, classes, bias, mse_threshold)
         actual_val = x[2]
         predicted = x[3]
         evaluation.Evaluation.plot_confusion_matrix(
